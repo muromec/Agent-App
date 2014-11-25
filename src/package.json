@@ -2,7 +2,7 @@
   "name": "Agent-App",
   "version": "0.1.0",
   "description": "GUI for dstucrypt/agent.",
-  "main": "main.js",
+  "main": "index.js",
   "repository": {
     "url": ""
   }
