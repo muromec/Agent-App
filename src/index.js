@@ -1,5 +1,9 @@
-var app = require('app');  // Module to control application life.
+var app           = require('app');  // Module to control application life.
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
+var nodejsx       = require('node-jsx').install();
+var React         = require('react');
+var Index       = require('./views/Index');  // Module to control application life.
+
 
 // Report crashes to our server.
 require('crash-reporter').start();
@@ -12,7 +16,7 @@ var mainWindow = null;
 app.on('window-all-closed', function() {
   if (process.platform != 'darwin')
     app.quit();
-});
+  });
 
 // This method will be called when atom-shell has done everything
 // initialization and ready for creating browser windows.
@@ -21,7 +25,8 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // and load the index.html of the app.
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  //mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadUrl('data:text/html;charset=utf-8,' + React.renderToString(React.createElement(Index)));
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {
