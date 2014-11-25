@@ -22,4 +22,4 @@ switch (process.platform) {
 		demo_cl = 'binaries/atom index.js';
 };
 
-gulp.task('demo', shell.task([ demo_cl ]));
+gulp.task('run', shell.task([ demo_cl ]));
