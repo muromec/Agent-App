@@ -8,7 +8,7 @@ var ipc = require('ipc');
 
 var Index = React.createClass({
   getInitialState: function () {
-    return {cert: undefined};
+    return {cert: undefined, promptPassword: false};
   },
   dropped: function (evt) {
     evt.stopPropagation();
@@ -17,7 +17,7 @@ var Index = React.createClass({
     var idx, f;
     for (idx = 0; idx < evt.dataTransfer.files.length; idx++ ) {
         f = evt.dataTransfer.files[idx];
-        ipc.send('cert', f.path);
+        ipc.send('guess', f.path);
     }
   },
   over: function (evt) {
@@ -26,7 +26,16 @@ var Index = React.createClass({
     evt.dataTransfer.dropEffect = 'copy';
   },
   gotCert: function (cert) {
+    if (cert.error) {
+      console.log('errr', cert.error);
+      return;
+    }
     this.setState({cert: cert});
+  },
+  storeMessage: function (msg) {
+    if (msg.need === 'password') {
+      this.setState({promptPassword: true});
+    }
   },
   componentDidMount: function () {
     var dom = document.body;
@@ -34,16 +43,21 @@ var Index = React.createClass({
     dom.addEventListener('dragover', this.over, false);
 
     ipc.on('rcert', this.gotCert);
+    ipc.on('store', this.storeMessage);
   },
   render: function() {
-    var name;
+    var name, pwprompt;
     if (this.state.cert) {
         name = this.state.cert.subject.commonName;
+    }
+    if (this.state.promptPassword) {
+        pwprompt = (<input type="password" ></input>);
     }
     return (<div>
         <title>Pure React</title>
         <div>Hi!</div>
         <div>{name}</div>
+        <div>{pwprompt}</div>
     </div>);
   }
 });
