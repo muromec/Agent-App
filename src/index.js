@@ -1,5 +1,8 @@
 var app           = require('app');  // Module to control application life.
+var fs = require('fs');
+var ipc = require('ipc');
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
+var jk = require('jkurwa');
 
 // Report crashes to our server.
 require('crash-reporter').start();
@@ -31,4 +34,11 @@ app.on('ready', function() {
     // when you should delete the corresponding element.
     mainWindow = null;
   });
+});
+
+ipc.on('cert', function (event, arg) {
+    fs.readFile(arg, function (err, data) {
+        var cert = jk.models.Certificate.from_asn1(data);
+        event.sender.send('rcert', {subject: cert.subject});
+    });
 });
