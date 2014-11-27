@@ -40,6 +40,19 @@ app.on('ready', function() {
 ipc.on('guess', function (event, arg) {
     fs.readFile(arg, function (err, data) {
         var p;
+        var meta;
+        if (data[0] !== 0x30 && data[0] !== 0x2D) {
+            meta = jk.transport.decode(data);
+        } else {
+            meta = {};
+        }
+        if (meta.docs) {
+            event.sender.send('transport', {
+                header: meta.header,
+                docs: meta.docs.map(function (doc) { return doc.type; }),
+                });
+            return;
+        }
         try {
             p = keycoder.parse(data);
         } catch (e) {
@@ -51,6 +64,9 @@ ipc.on('guess', function (event, arg) {
         }
         if (p.format === 'IIT' || p.format === 'PBES2') {
             event.sender.send('store', {need: 'password', path: arg});
+        }
+        if (p.format === 'privkeys') {
+            event.sender.send('store', {ready: true});
         }
     });
 });

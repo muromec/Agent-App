@@ -36,6 +36,12 @@ var Index = React.createClass({
     if (msg.need === 'password') {
       this.setState({promptPassword: true});
     }
+    if (msg.ready === true) {
+      console.log("store is ready");
+    }
+  },
+  documents: function (meta) {
+    console.log('document found', meta);
   },
   componentDidMount: function () {
     var dom = document.body;
@@ -44,6 +50,7 @@ var Index = React.createClass({
 
     ipc.on('rcert', this.gotCert);
     ipc.on('store', this.storeMessage);
+    ipc.on('transport', this.documents);
   },
   render: function() {
     var name, pwprompt;
