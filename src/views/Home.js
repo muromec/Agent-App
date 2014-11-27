@@ -6,6 +6,7 @@
 var ipc = require('ipc');
 var React = require('react');
 var Doc = require('./Doc');
+var Dropspot = require('../mixins/Dropspot');
 var encoding = require("encoding");
 
 var recode = function (meta) {
@@ -24,41 +25,22 @@ var recode = function (meta) {
 };
 
 var Home = React.createClass({
+  mixins: [Dropspot],
   getInitialState: function () {
     return {
       cert: undefined,
     };
   },
   componentDidMount: function () {
-    var dom = document.body;
-    dom.addEventListener('drop', this.dropped, false);
-    dom.addEventListener('dragover', this.over, false);
-
     ipc.on('rcert', this.gotCert);
     ipc.on('transport', this.documents);
   },
   componentWillUnmount: function () {
-    var dom = document.body;
-    dom.removeEventListener('drop', this.dropped, false);
-    dom.removeEventListener('dragover', this.over, false);
-
     ipc.removeListener('rcert', this.gotCert);
     ipc.removeListener('transport', this.documents);
   },
-  dropped: function (evt) {
-    evt.stopPropagation();
-    evt.preventDefault();
-
-    var idx, f;
-    for (idx = 0; idx < evt.dataTransfer.files.length; idx++ ) {
-        f = evt.dataTransfer.files[idx];
-        ipc.send('guess', f.path);
-    }
-  },
-  over: function (evt) {
-    evt.stopPropagation();
-    evt.preventDefault();
-    evt.dataTransfer.dropEffect = 'copy';
+  dropFile: function (f) {
+    ipc.send('guess', f.path);
   },
   gotCert: function (cert) {
     if (cert.error) {
