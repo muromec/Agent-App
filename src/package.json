@@ -7,6 +7,7 @@
     "url": ""
   },
   "dependencies": {
+    "encoding": "latest",
     "react": "0.12.1",
     "node-jsx": "0.12.4",
     "jkurwa": "0.4.x",

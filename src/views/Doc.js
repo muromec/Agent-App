@@ -12,6 +12,10 @@ var Doc = React.createClass({
     var x = step.cert;
     var headers = [];
 
+    if (doc_type) {
+      headers.push(<li key="type">Type: {doc_type}</li>);
+    }
+
     if (tr.SUBJECT) {
       headers.push(<li key="subj">Subject: {tr.SUBJECT}</li>);
     }
@@ -29,12 +33,18 @@ var Doc = React.createClass({
       headers.push(<li key="edrpou">Signed-By-EDRPOU: {x.extension.ipn.EDRPOU}</li>);
     }
     if (step.enc) {
-      headers.push(<li key="enc">Encrypted</li>);
+      if (step.error) {
+        headers.push(<li key="enc">No key to decrypt</li>);
+      } else {
+        headers.push(<li key="enc">Encrypted</li>);
+      }
     }
 
     return (<div>
-            {doc_type}
             <ul>{headers}</ul>
+            <pre>
+                {this.props.error || this.props.content}
+            </pre>
     </div>);
   }
 });

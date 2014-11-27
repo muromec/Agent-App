@@ -6,6 +6,22 @@
 var React = require('react');
 var ipc = require('ipc');
 var Doc = require('./Doc');
+var encoding = require("encoding");
+
+var recode = function (meta) {
+    var step = meta.docs[0];
+    var tr = (step.transport ? step.transport.header : {}) || {};
+
+    if (tr.ENCODING === 'WIN') {
+
+        Object.keys(tr).map(function (key) {
+            tr[key] = encoding.convert(tr[key], 'utf8', 'cp1251').toString();
+        });
+
+        meta.content = encoding.convert(meta.content, 'utf8', 'cp1251').toString();
+    }
+    return meta;
+};
 
 var Index = React.createClass({
   getInitialState: function () {
@@ -46,7 +62,12 @@ var Index = React.createClass({
     }
   },
   documents: function (meta) {
-    this.setState({docs: meta.docs});
+    meta = recode(meta);
+    this.setState({
+        docs: meta.docs, 
+        docContent: meta.content,
+        docError: meta.error,
+    });
   },
   componentDidMount: function () {
     var dom = document.body;
@@ -58,7 +79,7 @@ var Index = React.createClass({
     ipc.on('transport', this.documents);
   },
   render: function() {
-    var name, pwprompt, docs, ready;
+    var name, pwprompt, doc, ready;
     if (this.state.cert) {
         name = this.state.cert.subject.commonName;
     }
@@ -69,11 +90,7 @@ var Index = React.createClass({
         ready = "Key loaded. Ready to sign, encrypt or decrypt";
     }
     if (this.state.docs) {
-        var idx = 0;
-        docs = this.state.docs.map(function (el) {
-            idx ++;
-            return (<li key={idx} ><Doc header={el} /></li>);
-        });
+        doc = <Doc header={this.state.docs[0]} content={this.state.docContent} error={this.state.docError} />
     }
     return (<div>
         <title>Pure React</title>
@@ -81,7 +98,7 @@ var Index = React.createClass({
         <div>{name}</div>
         <div>{pwprompt}</div>
         <div>{ready}</div>
-        <ul>{docs}</ul>
+        {doc}
     </div>);
   }
 });

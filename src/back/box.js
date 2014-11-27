@@ -59,6 +59,7 @@ var rguess = function (event, arg) {
                 header: meta.header,
                 docs: meta.docs || meta.pipe,
                 error: meta.error,
+                content: meta.content.toString('binary'),
                 });
             return;
         }
