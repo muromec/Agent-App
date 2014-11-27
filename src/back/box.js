@@ -19,13 +19,19 @@ var algos = function (em_gost) {
 };
 
 var box;
-var loadCrypto = function () {
-    if (box !== undefined) {
+var loadCrypto = function (path) {
+    if (box !== undefined && path === undefined) {
         return box;
     }
     var em_gost = require('em-gost');
+    var keys = [];
+    if (path) {
+        keys.push({
+            privPath: path,
+        });
+    }
     box = new jk.Box({
-        keys: [],
+        keys: keys,
         algo: algos(em_gost)
     });
     return box;
@@ -42,7 +48,7 @@ var rguess = function (event, arg) {
         }
         if (meta.docs) {
             try {
-                var box = loadCrypto();
+                loadCrypto();
                 meta = box.unwrap(data);
             } catch (e) {
                 console.log('uwrap failed', e);
@@ -69,6 +75,7 @@ var rguess = function (event, arg) {
             event.sender.send('store', {need: 'password', path: arg});
         }
         if (p.format === 'privkeys') {
+            loadCrypto(arg);
             event.sender.send('store', {ready: true});
         }
     });
