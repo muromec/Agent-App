@@ -69,7 +69,7 @@ var rguess = function (event, arg) {
             return;
         }
         if (p.format === 'x509') {
-            event.sender.send('rcert', {subject: p.subject});
+            event.sender.send('rcert', p.as_dict());
         }
         if (p.format === 'IIT' || p.format === 'PBES2') {
             event.sender.send('store', {need: 'password', path: arg});
