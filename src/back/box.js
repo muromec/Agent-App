@@ -82,8 +82,33 @@ var rguess = function (event, arg) {
     });
 };
 
+var rsign = function (event, path) {
+    fs.readFile(path, function (err, data) {
+        if (err) {
+            event.sender.send('rsign', {result: false, error: "EREAD"});
+            return;
+        }
+        try {
+            loadCrypto();
+            var pipe = ['sign'];
+            var ret = box.pipe(data, pipe);
+            var signPath = path + '.sign';
+            fs.writeFile(signPath, ret, function (err) {
+                event.sender.send('rsign', {
+                    result: err === null,
+                    error: "EWRITE",
+                    path: signPath,
+                });
+            });
+        } catch (e) {
+            event.sender.send('rsign', {result: false, error: "ESIGN"});
+        }
+    });
+};
+
 module.exports = {
     start: function () {
         ipc.on('guess', rguess);
+        ipc.on('sign', rsign);
     },
 };
