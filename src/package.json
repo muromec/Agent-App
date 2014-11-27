@@ -11,7 +11,7 @@
     "react": "0.12.1",
     "react-router": "0.11.x",
     "node-jsx": "0.12.4",
-    "jkurwa": "0.4.x",
+    "jkurwa": "0.4.1+",
     "em-gost": "0.1.x"
   }
 }
