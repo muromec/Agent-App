@@ -1,9 +1,8 @@
+'use strict';
+
 var app           = require('app');  // Module to control application life.
-var fs = require('fs');
-var ipc = require('ipc');
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
-var jk = require('jkurwa');
-var keycoder = new jk.Keycoder(); // TODO: kill this please in jk
+var back = require('./back/box');
 
 // Report crashes to our server.
 require('crash-reporter').start();
@@ -35,38 +34,6 @@ app.on('ready', function() {
     // when you should delete the corresponding element.
     mainWindow = null;
   });
+  back.start();
 });
 
-ipc.on('guess', function (event, arg) {
-    fs.readFile(arg, function (err, data) {
-        var p;
-        var meta;
-        if (data[0] !== 0x30 && data[0] !== 0x2D) {
-            meta = jk.transport.decode(data);
-        } else {
-            meta = {};
-        }
-        if (meta.docs) {
-            event.sender.send('transport', {
-                header: meta.header,
-                docs: meta.docs.map(function (doc) { return doc.type; }),
-                });
-            return;
-        }
-        try {
-            p = keycoder.parse(data);
-        } catch (e) {
-            event.sender.send('rcert', {error: "Oops.."});
-            return;
-        }
-        if (p.format === 'x509') {
-            event.sender.send('rcert', {subject: p.subject});
-        }
-        if (p.format === 'IIT' || p.format === 'PBES2') {
-            event.sender.send('store', {need: 'password', path: arg});
-        }
-        if (p.format === 'privkeys') {
-            event.sender.send('store', {ready: true});
-        }
-    });
-});
