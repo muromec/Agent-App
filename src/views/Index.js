@@ -5,10 +5,15 @@
 
 var React = require('react');
 var ipc = require('ipc');
+var Doc = require('./Doc');
 
 var Index = React.createClass({
   getInitialState: function () {
-    return {cert: undefined, promptPassword: false};
+    return {
+      cert: undefined,
+      promptPassword: false,
+      storeReady: false,
+    };
   },
   dropped: function (evt) {
     evt.stopPropagation();
@@ -34,14 +39,14 @@ var Index = React.createClass({
   },
   storeMessage: function (msg) {
     if (msg.need === 'password') {
-      this.setState({promptPassword: true});
+      this.setState({promptPassword: true, storeReady: false});
     }
     if (msg.ready === true) {
-      console.log("store is ready");
+      this.setState({promptPassword: false, storeReady: true});
     }
   },
   documents: function (meta) {
-    console.log('document found', meta);
+    this.setState({docs: meta.docs});
   },
   componentDidMount: function () {
     var dom = document.body;
@@ -53,18 +58,30 @@ var Index = React.createClass({
     ipc.on('transport', this.documents);
   },
   render: function() {
-    var name, pwprompt;
+    var name, pwprompt, docs, ready;
     if (this.state.cert) {
         name = this.state.cert.subject.commonName;
     }
     if (this.state.promptPassword) {
         pwprompt = (<input type="password" ></input>);
     }
+    if (this.state.storeReady) {
+        ready = "Key loaded. Ready to sign, encrypt or decrypt";
+    }
+    if (this.state.docs) {
+        var idx = 0;
+        docs = this.state.docs.map(function (el) {
+            idx ++;
+            return (<li key={idx} ><Doc header={el} /></li>);
+        });
+    }
     return (<div>
         <title>Pure React</title>
         <div>Hi!</div>
         <div>{name}</div>
         <div>{pwprompt}</div>
+        <div>{ready}</div>
+        <ul>{docs}</ul>
     </div>);
   }
 });

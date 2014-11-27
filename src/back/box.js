@@ -57,7 +57,7 @@ var rguess = function (event, arg) {
             return;
         }
         try {
-            p = keycoder.parse(data);
+            p = keycoder.parse(keycoder.maybe_pem(data));
         } catch (e) {
             event.sender.send('rcert', {error: "Oops.."});
             return;
