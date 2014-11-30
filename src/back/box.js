@@ -3,36 +3,20 @@
 var ipc = require('ipc');
 var jk = require('jkurwa');
 var fs = require('fs');
+var gost89 = require('gost89'),
+    algos = gost89.compat.algos;
 
 var keycoder = new jk.Keycoder(); // TODO: kill this please in jk
 
-var algos = function (em_gost) {
-    return {
-        kdf: em_gost.gost_kdf,
-        keywrap: em_gost.gost_keywrap,
-        keyunwrap: em_gost.gost_unwrap,
-        encrypt: em_gost.gost_encrypt_cfb,
-        decrypt: em_gost.gost_decrypt_cfb,
-        hash: em_gost.compute_hash,
-        storeload: em_gost.decode_data,
-    };
-};
 
 var box;
 var loadCrypto = function (path) {
     if (box !== undefined && path === undefined) {
         return box;
     }
-    var em_gost = require('em-gost');
-    var keys = [];
-    if (path) {
-        keys.push({
-            privPath: path,
-        });
-    }
     box = new jk.Box({
         keys: keys,
-        algo: algos(em_gost)
+        algo: algos()
     });
     return box;
 };
