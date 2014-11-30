@@ -44,7 +44,7 @@ var Index = React.createClass({
         <title>Pure React</title>
         <div>{ready || pwprompt || "No key loaded"}</div>
         <div>
-            Agent. <Link to="sign">Sign file</Link> <Link to="home">Home</Link>
+            Agent. <Link to="sign">Sign file</Link> <Link to="home">Home</Link> <Link to="config" >Config</Link>
         </div>
         <RouteHandler />
     </div>);

@@ -8,61 +8,113 @@ var gost89 = require('gost89'),
 
 var keycoder = new jk.Keycoder(); // TODO: kill this please in jk
 
+global.crypto = require('crypto');
+if(global.crypto.getRandomValues === undefined) {
+    global.crypto.getRandomValues = function(xb) {
+        var i;
+        var ret = global.crypto.rng(xb.length);
+        if (!xb) {
+            return ret;
+        }
+        for(i=0; i< xb.length; i++) {
+            xb[i] = ret[i];
+        }
+        return xb;
+    };
+}
 
-var box;
-var loadCrypto = function (path) {
-    if (box !== undefined && path === undefined) {
-        return box;
-    }
-    box = new jk.Box({
-        keys: keys,
-        algo: algos()
+var box = new jk.Box({
+    keys: [],
+    algo: algos()
+});
+
+var keyinfo = function (key) {
+  var ret = {};
+  if (key.priv) {
+    ret.pub = new Buffer(key.priv.pub_compress().truncate_buf8()).toString('hex');
+  }
+  if (key.cert) {
+    ret.cert = key.cert.as_dict();
+  }
+  return ret;
+};
+
+var pubIndex = function (pubkey) {
+  return pubkey.point.toString('hex');
+};
+
+var loadIntoBox = function (data) {
+  var p;
+  try {
+    p = keycoder.parse(keycoder.maybe_pem(data));
+  } catch (e) {
+    return {"error": "ELOAD"};
+  }
+
+  if (p.format === 'x509') {
+    box.load({cert: p});
+    return true;
+  }
+
+  if (p.format === 'privkeys') {
+    p.keys.map(function (key) {
+      box.load({privPem: key.as_pem()});
     });
-    return box;
+    return true;
+  }
+};
+
+var rbox = function (event, arg) {
+
+  var ret;
+  if (arg.get === 'status') {
+    ret = true;
+  }
+  if (arg.load) {
+    fs.readFile(arg.load, function (err, data) {
+      if (!err) {
+        ret = loadIntoBox(data, arg.load);
+      } else {
+        ret = {"error": "EREAD"};
+      }
+      if (ret === true) {
+        ret = {keys: box.keys.map(keyinfo)};
+        event.sender.send('rbox', ret);
+      }
+    });
+  }
+  if (ret === true) {
+    ret = {keys: box.keys.map(keyinfo)};
+  }
+  if (ret === undefined) {
+    return;
+  }
+  event.sender.send('rbox', ret);
 };
 
 var rguess = function (event, arg) {
     fs.readFile(arg, function (err, data) {
-        var p;
         var meta;
         if (data[0] !== 0x30 && data[0] !== 0x2D) {
             meta = jk.transport.decode(data);
         } else {
             meta = {};
         }
-        if (meta.docs) {
-            try {
-                loadCrypto();
-                meta = box.unwrap(data);
-            } catch (e) {
-                console.log('uwrap failed', e);
-                meta.eror = e;
-                meta.docs = meta.docs.map(function (doc) { return doc.type; });
-            }
-            event.sender.send('transport', {
-                header: meta.header,
-                docs: meta.docs || meta.pipe,
-                error: meta.error,
-                content: meta.content.toString('binary'),
-                });
-            return;
+        if (!meta.docs) {
+            event.sender.send('transport', {erro: "EFMT"});
         }
         try {
-            p = keycoder.parse(keycoder.maybe_pem(data));
+            meta = box.unwrap(data);
         } catch (e) {
-            event.sender.send('rcert', {error: "Oops.."});
-            return;
+            meta.eror = e;
+            meta.docs = meta.docs.map(function (doc) { return doc.type; });
         }
-        if (p.format === 'x509') {
-            event.sender.send('rcert', p.as_dict());
-        }
-        if (p.format === 'IIT' || p.format === 'PBES2') {
-            event.sender.send('store', {need: 'password', path: arg});
-        }
-        if (p.format === 'privkeys') {
-            loadCrypto(arg);
-            event.sender.send('store', {ready: true});
-        }
+        event.sender.send('transport', {
+            header: meta.header,
+            docs: meta.docs || meta.pipe,
+            error: meta.error,
+            content: meta.content.toString('binary'),
+        });
     });
 };
 
@@ -73,7 +125,6 @@ var rsign = function (event, path) {
             return;
         }
         try {
-            loadCrypto();
             var pipe = ['sign'];
             var ret = box.pipe(data, pipe);
             var signPath = path + '.sign';
@@ -94,5 +145,6 @@ module.exports = {
     start: function () {
         ipc.on('guess', rguess);
         ipc.on('sign', rsign);
+        ipc.on('box', rbox);
     },
 };
