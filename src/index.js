@@ -34,6 +34,8 @@ app.on('ready', function() {
     // when you should delete the corresponding element.
     mainWindow = null;
   });
-  back.start();
+  back.start({
+      configPath: __dirname + '/.keys.json',
+  });
 });
 

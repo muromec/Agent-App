@@ -6,6 +6,8 @@ var fs = require('fs');
 var gost89 = require('gost89'),
     algos = gost89.compat.algos;
 
+var config = require('./config.js');
+
 var keycoder = new jk.Keycoder(); // TODO: kill this please in jk
 
 global.crypto = require('crypto');
@@ -39,8 +41,8 @@ var keyinfo = function (key) {
   return ret;
 };
 
-var pubIndex = function (pubkey) {
-  return pubkey.point.toString('hex');
+var configPath = function () {
+    return (__dirname + '/.keys.json');
 };
 
 var loadIntoBox = function (data) {
@@ -58,7 +60,7 @@ var loadIntoBox = function (data) {
 
   if (p.format === 'privkeys') {
     p.keys.map(function (key) {
-      box.load({privPem: key.as_pem()});
+      box.load({priv: key});
     });
     return true;
   }
@@ -67,24 +69,28 @@ var loadIntoBox = function (data) {
 var rbox = function (event, arg) {
 
   var ret;
+  var response = function () {
+        ret = {keys: box.keys.map(keyinfo)};
+        event.sender.send('rbox', ret);
+  };
   if (arg.get === 'status') {
     ret = true;
   }
   if (arg.load) {
     fs.readFile(arg.load, function (err, data) {
       if (!err) {
-        ret = loadIntoBox(data, arg.load);
+        ret = loadIntoBox(data);
       } else {
         ret = {"error": "EREAD"};
       }
       if (ret === true) {
-        ret = {keys: box.keys.map(keyinfo)};
-        event.sender.send('rbox', ret);
+        config.save(box);
+        response();
       }
     });
   }
   if (ret === true) {
-    ret = {keys: box.keys.map(keyinfo)};
+    return response();
   }
   if (ret === undefined) {
     return;
@@ -94,6 +100,9 @@ var rbox = function (event, arg) {
 
 var rguess = function (event, arg) {
     fs.readFile(arg, function (err, data) {
+        if (err !== null) {
+            return event.sender.send('transport', {erro: "EREAD"});
+        }
         var meta;
         if (data[0] !== 0x30 && data[0] !== 0x2D) {
             meta = jk.transport.decode(data);
@@ -101,7 +110,7 @@ var rguess = function (event, arg) {
             meta = {};
         }
         if (!meta.docs) {
-            event.sender.send('transport', {erro: "EFMT"});
+            return event.sender.send('transport', {erro: "EFMT"});
         }
         try {
             meta = box.unwrap(data);
@@ -142,9 +151,13 @@ var rsign = function (event, path) {
 };
 
 module.exports = {
-    start: function () {
+    start: function (opts) {
+        opts = opts || {};
         ipc.on('guess', rguess);
         ipc.on('sign', rsign);
         ipc.on('box', rbox);
+        if (opts.configPath) {
+            config.load(box, opts.configPath);
+        }
     },
 };
