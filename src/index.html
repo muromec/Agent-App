@@ -2,7 +2,13 @@
     <script>
         var nodejsx       = require('node-jsx').install();
         var React         = require('react');
-        var Index       = require('./views/Index');
-            React.render(React.createElement(Index), document.body);
+        var Router = require('react-router');
+        var routes = require('./views/routes');
+
+        history.pushState(null, null, "/");
+
+        Router.run(routes, Router.HistoryLocation, function (Handler) {
+              React.render(React.createElement(Handler), document.body);
+        });
     </script>
 </body>
